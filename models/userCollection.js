@@ -10,10 +10,6 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  password: {
-    type: String,
-    required: true,
-  },
   createdAt: {
     type: Date,
     required: true,
@@ -21,6 +17,6 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-const userCollection = mongoose.model("userCollection", userSchema);
+const userCollection = mongoose.model("users_collection", userSchema);
 
 module.exports = userCollection;
