@@ -3,14 +3,47 @@ require("./config/database");
 
 const express = require("express");
 const app = express();
-const cors = require("cors");
 const userCollection = require("./models/userCollection");
 
-const port = 4000; // You can change the port number if needed
+const port = 9000; // You can change the port number if needed
 
-app.use(express.json()); // for parsing application/json
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+const bodyParser = require("body-parser")
+const cors = require("cors")
+
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json())
+
+app.use(cors())
+
+//-----------------STRIPE PAYMENT ----------------
+
+const stripe = require("stripe")("sk_test_51LclMjBLMFfgNXFxKTR7J0t8YucyD3nGk4adO8QwwiSDdIPfEdoLRtcsEU6lUU3h4oY0PQfg1FsnuckTB9itaHCt00UdYDm3bU")
+
+app.post("/payment", cors(), async (req, res) => {
+	let { amount, id } = req.body
+	try {
+		const payment = await stripe.paymentIntents.create({
+			amount,
+			currency: "USD",
+			description: "WelcomeBD company",
+			payment_method: id,
+			confirm: true,
+      return_url: "https://yourwebsite.com/success",
+		})
+		console.log("Payment", payment)
+		res.json({
+			message: "Payment successful",
+			success: true
+		})
+	} catch (error) {
+		console.log("Error", error)
+		res.json({
+			message: "Payment failed",
+			success: false
+		})
+	}
+})
+
 
 
 // //----------- POST: /api/register -> Create new user ------------
@@ -60,6 +93,8 @@ app.post("/api/users", async (req, res) => {
       );
       res.json(result);
     });
+
+
 
 //-------------ROOT PAGE ------------
 app.get("/", (req, res) => {
