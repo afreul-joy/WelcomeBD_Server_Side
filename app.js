@@ -16,7 +16,6 @@ app.use(bodyParser.json())
 app.use(cors())
 
 //-----------------STRIPE PAYMENT ----------------
-
 const stripe = require("stripe")("sk_test_51LclMjBLMFfgNXFxKTR7J0t8YucyD3nGk4adO8QwwiSDdIPfEdoLRtcsEU6lUU3h4oY0PQfg1FsnuckTB9itaHCt00UdYDm3bU")
 
 app.post("/payment", cors(), async (req, res) => {
