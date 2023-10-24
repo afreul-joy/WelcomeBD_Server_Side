@@ -60,6 +60,23 @@ app.get("/userOrders", async (req, res) => {
   res.json(product);
 });
 
+//----------GET ADMIN EMAIL-----------------
+app.get("/api/users/admin/:email", async (req, res) => {
+  const email = req.params.email;
+  try {
+    const user = await userCollection.findOne({ email });
+    if (user && user.role === "admin") {
+      res.json({ isAdmin: true });
+    } else {
+      res.json({ isAdmin: false });
+    }
+  } catch (error) {
+    console.error("Error checking admin status", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while checking admin status" });
+  }
+});
 //-----------------STRIPE PAYMENT ----------------
 const stripe = require("stripe")(
   "sk_test_51LclMjBLMFfgNXFxKTR7J0t8YucyD3nGk4adO8QwwiSDdIPfEdoLRtcsEU6lUU3h4oY0PQfg1FsnuckTB9itaHCt00UdYDm3bU"
@@ -119,29 +136,46 @@ app.post("/payment", cors(), async (req, res) => {
 });
 
 // //----------- POST: /api/register -> Create new user ------------
+// Modify the registration route to check if the user already exists
 app.post("/api/users", async (req, res) => {
   console.log(req.body);
   try {
-    const newUser = new userCollection({
-      name: req.body.displayName,
-      email: req.body.email,
-    });
-    console.log("newUser", newUser);
+    const email = req.body.email;
 
-    // Save the new billing document to the database
-    const user = await newUser.save();
-    console.log("user", user);
-    if (user) {
+    // Check if the user with this email already exists
+    const existingUser = await userCollection.findOne({ email });
+
+    if (existingUser) {
+      // If the user already exists, update any necessary information, but don't change the role
+      existingUser.name = req.body.displayName;
+      const updatedUser = await existingUser.save();
       res.status(200).send({
-        success: true, // ***response extra information
-        message: "Return a single user",
-        data: user,
+        success: true,
+        message: "User data updated",
+        data: updatedUser,
       });
     } else {
-      res.status(400).send({
-        success: false,
-        message: "Product not found",
+      // If the user does not exist, create a new user with the "user" role
+      const newUser = new userCollection({
+        name: req.body.displayName,
+        email: req.body.email,
+        role: "user", // Set the role to "user"
       });
+
+      const user = await newUser.save();
+
+      if (user) {
+        res.status(200).send({
+          success: true,
+          message: "New user registered",
+          data: user,
+        });
+      } else {
+        res.status(400).send({
+          success: false,
+          message: "User not found",
+        });
+      }
     }
   } catch (error) {
     res.status(500).send({
@@ -153,12 +187,54 @@ app.post("/api/users", async (req, res) => {
 //----------PUT API UPSERT FOR GOOGLE SING-IN USER -----------------
 app.put("/api/users", async (req, res) => {
   const user = req.body;
-  // console.log("put", user);
+  // console.log(req.body);
+
+  // Do not change the 'role' property for Google login users, and also check if the user is not already an admin
   const filter = { email: user.email, name: user.displayName };
-  const options = { upsert: true };
-  const updateDoc = { $set: user };
-  const result = await userCollection.updateOne(filter, updateDoc, options);
-  res.json(result);
+  const existingUser = await userCollection.findOne(filter);
+
+  if (!existingUser) {
+    // If the user doesn't exist, create a new user with the "user" role
+    user.role = "user";
+    const newUser = new userCollection(user);
+    const result = await newUser.save();
+    res.json(result);
+  } else if (existingUser.role === "admin") {
+    // If the user exists and is already an admin, update their information, but keep the role as "admin"
+    const updateDoc = { $set: user };
+    const result = await userCollection.updateOne(filter, updateDoc);
+    res.json(result);
+  } else {
+    // If the user exists and is not an admin, update their information and change the role to "user"
+    const updateDoc = { $set: user, $set: { role: "user" } };
+    const result = await userCollection.updateOne(filter, updateDoc);
+    res.json(result);
+  }
+});
+
+//----------PUT API UPSERT MAKE ADMIN -----------------
+app.put("/api/users/admin/:email", async (req, res) => {
+  const email = req.params.email;
+  try {
+    const user = await userCollection.findOne({ email });
+
+    if (user) {
+      user.role = "admin";
+      const updatedUser = await user.save();
+      res.json({
+        success: true,
+        message: "User role updated to admin",
+        data: updatedUser,
+      });
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (error) {
+    console.error("Error updating user role to admin", error);
+    res.status(500).json({
+      error: "An error occurred while updating user role to admin",
+    });
+  }
 });
 
 //----------DELETE API FOR CANCEL ORDER -----------------
@@ -174,11 +250,11 @@ app.delete("/userOrders/:_id", async (req, res) => {
     }
   } catch (error) {
     console.error("Error deleting order", error);
-    res.status(500).json({ error: "An error occurred while deleting the order" });
+    res
+      .status(500)
+      .json({ error: "An error occurred while deleting the order" });
   }
 });
-
-
 
 //-------------ROOT PAGE ------------
 app.get("/", (req, res) => {
