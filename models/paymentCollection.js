@@ -9,6 +9,7 @@ const paymentSchema = new mongoose.Schema({
   journeyDate: Date,
   location: String,
   paymentStatus: String,
+  status: String,
 });
 
 const paymentCollection = mongoose.model("payment_collections", paymentSchema);

@@ -86,7 +86,7 @@ const stripe = require("stripe")(
 
 app.post("/payment", cors(), async (req, res) => {
   try {
-    const { amount, id, guide, email, journeyDate, location, img } = req.body;
+    const { amount, id, guide, email, journeyDate, location, img ,status} = req.body;
     // console.log(req.body);
 
     // Create a new Payment instance
@@ -99,6 +99,7 @@ app.post("/payment", cors(), async (req, res) => {
       journeyDate,
       location,
       img,
+      status
     });
 
     // Save payment data to the database
@@ -284,6 +285,30 @@ app.put("/explore/:id", async (req, res) => {
       .json({ error: "An error occurred while updating the package" });
   }
 });
+
+app.put("/updateOrderStatus/:orderId", async (req, res) => {
+  // console.log(req.body, req.params)
+  const orderId = req.params.orderId;
+  const { status } = req.body;
+
+  try {
+    const order = await PaymentCollection.findById(orderId);
+
+    if (!order) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    order.status = status;
+    await order.save();
+
+    res.json({ message: "Order status updated successfully", updatedOrder: order });
+  } catch (error) {
+    console.error("Error updating order status", error);
+    res.status(500).json({ error: "An error occurred while updating order status" });
+  }
+});
+
 
 // --------------------DELETE API for deleting a package-----------
 app.delete("/explore/:id", async (req, res) => {
