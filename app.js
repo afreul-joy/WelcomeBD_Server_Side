@@ -33,7 +33,7 @@ app.get("/explore", async (req, res) => {
 app.get("/guide", async (req, res) => {
   try {
     const products = await guideCollection.find({}).exec();
-    console.log(products);
+    // console.log(products);
     res.json(products);
   } catch (error) {
     // Handle any potential errors here
@@ -41,15 +41,6 @@ app.get("/guide", async (req, res) => {
     res.status(500).json({ error: "An error occurred while fetching data" });
   }
 });
-//----------GET API SINGLE ID -----------------
-app.get("/explore/:id", async (req, res) => {
-  const id = req.params.id;
-  console.log("id is", id);
-  const query = { _id: new ObjectId(id) }; // Use 'new' with ObjectId
-  const product = await tourismSpotCollection.findOne(query);
-  res.send(product);
-});
-
 //----------GET API FILTERING BY EMAIL -----------------
 app.get("/userOrders", async (req, res) => {
   const email = req.query.email;
@@ -135,10 +126,30 @@ app.post("/payment", cors(), async (req, res) => {
   }
 });
 
-// //----------- POST: /api/register -> Create new user ------------
-// Modify the registration route to check if the user already exists
-app.post("/api/users", async (req, res) => {
+//----------POST API ADD PACKAGES -----------------
+app.post("/api/addPackages", async (req, res) => {
   console.log(req.body);
+  const newPackageData = req.body;
+  console.log("POST VAI", newPackageData);
+
+  // Create a new instance of the tourismSpotCollection model with the package data
+  const newPackage = new tourismSpotCollection(newPackageData);
+
+  // Save the new package data to the database
+  try {
+    const savedPackage = await newPackage.save();
+    res.json(savedPackage);
+  } catch (error) {
+    console.error("Error adding a new package:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while adding the package" });
+  }
+});
+
+//----------- POST: /api/register -> Create new user ------------
+app.post("/api/users", async (req, res) => {
+  // console.log(req.body);
   try {
     const email = req.body.email;
 
@@ -234,6 +245,54 @@ app.put("/api/users/admin/:email", async (req, res) => {
     res.status(500).json({
       error: "An error occurred while updating user role to admin",
     });
+  }
+});
+// ================PUT API for updating a package============
+app.put("/explore/:id", async (req, res) => {
+  // console.log(req.params,req.body);
+  const id = req.params.id;
+  const updatedPackageData = req.body;
+  try {
+    const query = { _id: new ObjectId(id) };
+    // console.log(query);
+    const updatedPackage = await tourismSpotCollection.findOneAndUpdate(
+      query,
+      updatedPackageData,
+      { new: true }
+    );
+    // console.log(updatedPackage)
+    if (updatedPackage) {
+      res.json(updatedPackage);
+    } else {
+      res.status(404).json({ error: "Package not found" });
+    }
+  } catch (error) {
+    console.error("Error updating package", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while updating the package" });
+  }
+});
+
+// --------------------DELETE API for deleting a package-----------
+app.delete("/explore/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const query = { _id: new ObjectId(id) };
+    const result = await tourismSpotCollection.deleteOne(query);
+    if (result.deletedCount === 1) {
+      res.json({
+        message: "Package deleted successfully",
+        deletedPackageId: id,
+      });
+    } else {
+      res.status(404).json({ error: "Package not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting package", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while deleting the package" });
   }
 });
 
