@@ -41,6 +41,17 @@ app.get("/guide", async (req, res) => {
     res.status(500).json({ error: "An error occurred while fetching data" });
   }
 });
+app.get("/allUserOrders", async (req, res) => {
+  try {
+    const products = await PaymentCollection.find({}).exec();
+    // console.log(products);
+    res.json(products);
+  } catch (error) {
+    // Handle any potential errors here
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while fetching data" });
+  }
+});
 //----------GET API FILTERING BY EMAIL -----------------
 app.get("/userOrders", async (req, res) => {
   const email = req.query.email;
