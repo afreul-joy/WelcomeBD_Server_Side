@@ -86,7 +86,7 @@ const stripe = require("stripe")(
 
 app.post("/payment", cors(), async (req, res) => {
   try {
-    const { amount, id, guide, email, journeyDate, location, img ,status} = req.body;
+    const { amount, id, guide, email, journeyDate, location, img ,status,locationID} = req.body;
     // console.log(req.body);
 
     // Create a new Payment instance
@@ -95,11 +95,13 @@ app.post("/payment", cors(), async (req, res) => {
       amount,
       id,
       guide,
+      locationID,
       email,
       journeyDate,
       location,
       img,
-      status
+      status,
+  
     });
 
     // Save payment data to the database
@@ -206,6 +208,49 @@ app.post("/api/users", async (req, res) => {
     });
   }
 });
+
+app.post("/submitReview", async (req, res) => {
+  try {
+    const {  displayName ,locationID,photoURL,rating,comment} = req.body;
+
+    console.log(displayName,locationID,photoURL,rating)
+  
+    // Find the tourism spot by its ID
+    const tourismSpot = await tourismSpotCollection.findById(locationID);
+
+    if (!tourismSpot) {
+      res.status(404).json({ error: "Tourism spot not found" });
+      return;
+    }
+
+    // Create a new review object
+    const newReview = {
+      displayName: displayName,
+      photoURL: photoURL,
+      rating: rating,
+      comment: comment,
+    };
+
+    // Add the new review to the tourism spot's user_reviews array
+    tourismSpot.user_reviews.push(newReview);
+
+    // Update the tourism spot's rating (calculate the average rating)
+    const totalRatings = tourismSpot.user_reviews.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+    tourismSpot.rating = totalRatings / tourismSpot.user_reviews.length;
+
+    // Save the updated tourism spot document
+    await tourismSpot.save();
+
+    res.json({ message: "Review submitted successfully" });
+  } catch (error) {
+    console.error("Error submitting review", error);
+    res.status(500).json({ error: "An error occurred while submitting the review" });
+  }
+});
+
 
 //----------PUT API UPSERT FOR GOOGLE SING-IN USER -----------------
 app.put("/api/users", async (req, res) => {
