@@ -101,6 +101,7 @@ app.post("/payment", cors(), async (req, res) => {
       id,
       guide,
       email,
+      guideID,
       journeyDate,
       location,
       img,
@@ -118,6 +119,7 @@ app.post("/payment", cors(), async (req, res) => {
       locationID,
       email,
       journeyDate,
+      guideID,
       location,
       img,
       status,
@@ -179,6 +181,26 @@ app.post("/api/addPackages", async (req, res) => {
       .json({ error: "An error occurred while adding the package" });
   }
 });
+//----------POST API ADD PACKAGES -----------------
+app.post("/api/addGuides", async (req, res) => {
+  console.log(req.body);
+  const newPackageData = req.body;
+  console.log("POST VAI", newPackageData);
+
+  // Create a new instance of the tourismSpotCollection model with the package data
+  const newPackage = new guideCollection(newPackageData);
+
+  // Save the new package data to the database
+  try {
+    const savedPackage = await newPackage.save();
+    res.json(savedPackage);
+  } catch (error) {
+    console.error("Error adding a new package:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while adding the package" });
+  }
+});
 
 //----------- POST: /api/register -> Create new user ------------
 app.post("/api/users", async (req, res) => {
@@ -228,6 +250,7 @@ app.post("/api/users", async (req, res) => {
   }
 });
 
+// -------------------------- SUBMIT REVIEW  FOR tourismSpotCollection --------------------------
 app.post("/submitReview", async (req, res) => {
   try {
     const { displayName, locationID, photoURL, rating, comment } = req.body;
@@ -270,6 +293,52 @@ app.post("/submitReview", async (req, res) => {
       .status(500)
       .json({ error: "An error occurred while submitting the review" });
   }
+});
+// -------------------------- SUBMIT REVIEW  FOR guideCollection --------------------------
+app.post("/guide/submitReview", async (req, res) => {
+  try {
+    const { displayName, guideID, photoURL, rating, comment } = req.body;
+
+    console.log(displayName, guideID, photoURL, rating);
+
+    // Find the tourism spot by its ID
+    const tourismSpot = await guideCollection.findById(guideID);
+
+    if (!tourismSpot) {
+      res.status(404).json({ error: "Tourism spot not found" });
+      return;
+    }
+
+    // Create a new review object
+    const newReview = {
+      displayName: displayName,
+      photoURL: photoURL,
+      rating: rating,
+      comment: comment,
+    };
+
+    // Add the new review to the tourism spot's user_reviews array
+    tourismSpot.user_reviews.push(newReview);
+
+    // Update the tourism spot's rating (calculate the average rating)
+    const totalRatings = tourismSpot.user_reviews.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+    tourismSpot.rating = totalRatings / tourismSpot.user_reviews.length;
+
+    // Save the updated tourism spot document
+    await tourismSpot.save();
+
+    res.json({ message: "Review submitted successfully" });
+  } catch (error) {
+    console.error("Error submitting review", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while submitting the review" });
+  }
+
+
 });
 
 //----------PUT API UPSERT FOR GOOGLE SING-IN USER -----------------
@@ -351,6 +420,7 @@ app.put("/explore/:id", async (req, res) => {
   }
 });
 
+//----------PUT API UPDATE ORDER STATUS -----------------
 app.put("/updateOrderStatus/:orderId", async (req, res) => {
   // console.log(req.body, req.params)
   const orderId = req.params.orderId;

@@ -1,7 +1,13 @@
 const mongoose = require("mongoose");
 
+const reviewSchema = new mongoose.Schema({
+  displayName: String,
+  photoURL: String,
+  rating: Number,
+  comment: String,
+});
+
 const guideSchema = new mongoose.Schema({
-//   id: Number,
   name: String,
   gender: String,
   img: String,
@@ -10,7 +16,7 @@ const guideSchema = new mongoose.Schema({
   rating: Number,
   details: String,
   charge: Number,
-  reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
+  user_reviews: [reviewSchema], 
 });
 
 const guideCollection = mongoose.model("guide_collections", guideSchema);

@@ -10,7 +10,8 @@ const paymentSchema = new mongoose.Schema({
   location: String,
   paymentStatus: String,
   status: String,
-  locationID: String
+  locationID: String,
+  guideID: String
 });
 
 const paymentCollection = mongoose.model("payment_collections", paymentSchema);
