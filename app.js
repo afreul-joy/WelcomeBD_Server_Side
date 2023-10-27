@@ -41,6 +41,16 @@ app.get("/guide", async (req, res) => {
     res.status(500).json({ error: "An error occurred while fetching data" });
   }
 });
+//----------------------- GET Showing all users --------------------
+app.get("/api/users/", async (req, res) => {
+  try {
+    const users = await userCollection.find({}).exec();
+    res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while fetching users" });
+  }
+});
 app.get("/allUserOrders", async (req, res) => {
   try {
     const products = await PaymentCollection.find({}).exec();
@@ -86,7 +96,17 @@ const stripe = require("stripe")(
 
 app.post("/payment", cors(), async (req, res) => {
   try {
-    const { amount, id, guide, email, journeyDate, location, img ,status,locationID} = req.body;
+    const {
+      amount,
+      id,
+      guide,
+      email,
+      journeyDate,
+      location,
+      img,
+      status,
+      locationID,
+    } = req.body;
     // console.log(req.body);
 
     // Create a new Payment instance
@@ -101,7 +121,6 @@ app.post("/payment", cors(), async (req, res) => {
       location,
       img,
       status,
-  
     });
 
     // Save payment data to the database
@@ -211,10 +230,10 @@ app.post("/api/users", async (req, res) => {
 
 app.post("/submitReview", async (req, res) => {
   try {
-    const {  displayName ,locationID,photoURL,rating,comment} = req.body;
+    const { displayName, locationID, photoURL, rating, comment } = req.body;
 
-    console.log(displayName,locationID,photoURL,rating)
-  
+    console.log(displayName, locationID, photoURL, rating);
+
     // Find the tourism spot by its ID
     const tourismSpot = await tourismSpotCollection.findById(locationID);
 
@@ -247,10 +266,11 @@ app.post("/submitReview", async (req, res) => {
     res.json({ message: "Review submitted successfully" });
   } catch (error) {
     console.error("Error submitting review", error);
-    res.status(500).json({ error: "An error occurred while submitting the review" });
+    res
+      .status(500)
+      .json({ error: "An error occurred while submitting the review" });
   }
 });
-
 
 //----------PUT API UPSERT FOR GOOGLE SING-IN USER -----------------
 app.put("/api/users", async (req, res) => {
@@ -347,13 +367,17 @@ app.put("/updateOrderStatus/:orderId", async (req, res) => {
     order.status = status;
     await order.save();
 
-    res.json({ message: "Order status updated successfully", updatedOrder: order });
+    res.json({
+      message: "Order status updated successfully",
+      updatedOrder: order,
+    });
   } catch (error) {
     console.error("Error updating order status", error);
-    res.status(500).json({ error: "An error occurred while updating order status" });
+    res
+      .status(500)
+      .json({ error: "An error occurred while updating order status" });
   }
 });
-
 
 // --------------------DELETE API for deleting a package-----------
 app.delete("/explore/:id", async (req, res) => {
@@ -395,7 +419,25 @@ app.delete("/userOrders/:_id", async (req, res) => {
       .json({ error: "An error occurred while deleting the order" });
   }
 });
-
+//----------DELETE API FOR USER-----------------
+app.delete("/api/users/:id", async (req, res) => {
+  console.log(req.params);
+  const id = req.params.id; // Use id as the parameter
+  try {
+    const user = await userCollection.findOne({ _id: id }); // Use _id to find the user
+    if (user) {
+      await userCollection.deleteOne({ _id: id }); // Use deleteOne to delete the user
+      res.json({ message: "User deleted successfully" });
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting user", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while deleting the user" });
+  }
+});
 //-------------ROOT PAGE ------------
 app.get("/", (req, res) => {
   res.send("Server Ok!");
