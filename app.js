@@ -419,6 +419,32 @@ app.put("/explore/:id", async (req, res) => {
       .json({ error: "An error occurred while updating the package" });
   }
 });
+// ================PUT API for updating a guide============
+app.put("/guide/:id", async (req, res) => {
+  // console.log(req.params,req.body);
+  const id = req.params.id;
+  const updatedPackageData = req.body;
+  try {
+    const query = { _id: new ObjectId(id) };
+    // console.log(query);
+    const updatedPackage = await guideCollection.findOneAndUpdate(
+      query,
+      updatedPackageData,
+      { new: true }
+    );
+    // console.log(updatedPackage)
+    if (updatedPackage) {
+      res.json(updatedPackage);
+    } else {
+      res.status(404).json({ error: "Package not found" });
+    }
+  } catch (error) {
+    console.error("Error updating package", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while updating the package" });
+  }
+});
 
 //----------PUT API UPDATE ORDER STATUS -----------------
 app.put("/updateOrderStatus/:orderId", async (req, res) => {
@@ -455,6 +481,27 @@ app.delete("/explore/:id", async (req, res) => {
   try {
     const query = { _id: new ObjectId(id) };
     const result = await tourismSpotCollection.deleteOne(query);
+    if (result.deletedCount === 1) {
+      res.json({
+        message: "Package deleted successfully",
+        deletedPackageId: id,
+      });
+    } else {
+      res.status(404).json({ error: "Package not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting package", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while deleting the package" });
+  }
+});
+// --------------------DELETE API for deleting a Guides-----------
+app.delete("/guide/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const query = { _id: new ObjectId(id) };
+    const result = await guideCollection.deleteOne(query);
     if (result.deletedCount === 1) {
       res.json({
         message: "Package deleted successfully",
