@@ -41,6 +41,39 @@ app.get("/guide", async (req, res) => {
     res.status(500).json({ error: "An error occurred while fetching data" });
   }
 });
+app.get("/guide/:id", async (req, res) => {
+  console.log(req.params.id);
+  try {
+    const userId = req.params.id; // Get the user ID from the request parameters
+    const user = await guideCollection.findById(userId).exec();
+    if (!user) {
+      // If the user is not found, return a 404 error
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    // Handle any potential errors here
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while fetching data" });
+  }
+});
+
+// -----------------------------Guid showing in the tourist place-----------------------------
+app.get("/guides-in-location/:location", async (req, res) => {
+  const location = req.params.location;
+  // console.log("location params", location);
+  try {
+    const regex = new RegExp(location, "i"); // "i" for case-insensitive search
+    const guidesInLocation = await guideCollection
+      .find({ location: { $regex: regex } })
+      .exec();
+    console.log("guidIn", guidesInLocation);
+    res.json(guidesInLocation);
+  } catch (error) {
+    res.status(500).json({ error: "Unable to fetch guides in this location" });
+  }
+});
+
 //----------------------- GET Showing all users --------------------
 app.get("/api/users/", async (req, res) => {
   try {
@@ -97,6 +130,7 @@ const stripe = require("stripe")(
 app.post("/payment", cors(), async (req, res) => {
   try {
     const {
+      name,
       amount,
       id,
       guide,
@@ -113,6 +147,7 @@ app.post("/payment", cors(), async (req, res) => {
     // Create a new Payment instance
     const payment = new PaymentCollection({
       // Updated model name
+      name,
       amount,
       id,
       guide,
@@ -337,8 +372,6 @@ app.post("/guide/submitReview", async (req, res) => {
       .status(500)
       .json({ error: "An error occurred while submitting the review" });
   }
-
-
 });
 
 //----------PUT API UPSERT FOR GOOGLE SING-IN USER -----------------
@@ -395,7 +428,7 @@ app.put("/api/users/admin/:email", async (req, res) => {
 });
 // ================PUT API for updating a package============
 app.put("/explore/:id", async (req, res) => {
-  // console.log(req.params,req.body);
+  console.log(req.params, req.body);
   const id = req.params.id;
   const updatedPackageData = req.body;
   try {

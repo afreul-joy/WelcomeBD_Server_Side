@@ -12,6 +12,7 @@ const guideSchema = new mongoose.Schema({
   gender: String,
   img: String,
   location: String,
+  availableLocations: [mongoose.Schema.Types.ObjectId], // Add this field
   languages: [String],
   rating: Number,
   details: String,

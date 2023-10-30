@@ -8,6 +8,7 @@ const reviewSchema = new mongoose.Schema({
 });
 
 const tourismSpotSchema = new mongoose.Schema({
+  name: String,
   location: String,
   img: [String],
   tour_duration: String,
