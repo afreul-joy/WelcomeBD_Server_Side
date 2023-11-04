@@ -7,6 +7,7 @@ const userCollection = require("./models/userCollection");
 const tourismSpotCollection = require("./models/tourismSpotCollection");
 const PaymentCollection = require("./models/paymentCollection"); // Updated model name
 const guideCollection = require("./models/guideCollection");
+const hotelCollection = require("./models/hotelCollection");
 const port = 9000;
 
 const bodyParser = require("body-parser");
@@ -30,6 +31,33 @@ app.get("/explore", async (req, res) => {
     res.status(500).json({ error: "An error occurred while fetching data" });
   }
 });
+app.get("/hotel", async (req, res) => {
+  try {
+    const products = await hotelCollection.find({}).exec();
+    // console.log(products)
+    res.json(products);
+  } catch (error) {
+    // Handle any potential errors here
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while fetching data" });
+  }
+});
+app.get("/hotel/:id", async (req, res) => {
+  console.log(req.params.id);
+  try {
+    const userId = req.params.id; // Get the user ID from the request parameters
+    const user = await hotelCollection.findById(userId).exec();
+    if (!user) {
+      // If the user is not found, return a 404 error
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    // Handle any potential errors here
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while fetching data" });
+  }
+});
 app.get("/guide", async (req, res) => {
   try {
     const products = await guideCollection.find({}).exec();
@@ -42,7 +70,7 @@ app.get("/guide", async (req, res) => {
   }
 });
 app.get("/guide/:id", async (req, res) => {
-  console.log(req.params.id);
+  // console.log(req.params.id);
   try {
     const userId = req.params.id; // Get the user ID from the request parameters
     const user = await guideCollection.findById(userId).exec();
@@ -58,13 +86,27 @@ app.get("/guide/:id", async (req, res) => {
   }
 });
 
-// -----------------------------Guid showing in the tourist place-----------------------------
+// -----------------------------Guide & Hotel showing in the tourist place-----------------------------
 app.get("/guides-in-location/:location", async (req, res) => {
   const location = req.params.location;
   // console.log("location params", location);
   try {
     const regex = new RegExp(location, "i"); // "i" for case-insensitive search
     const guidesInLocation = await guideCollection
+      .find({ location: { $regex: regex } })
+      .exec();
+    console.log("guidIn", guidesInLocation);
+    res.json(guidesInLocation);
+  } catch (error) {
+    res.status(500).json({ error: "Unable to fetch guides in this location" });
+  }
+});
+app.get("/hotel-in-location/:location", async (req, res) => {
+  const location = req.params.location;
+  // console.log("location params", location);
+  try {
+    const regex = new RegExp(location, "i"); // "i" for case-insensitive search
+    const guidesInLocation = await hotelCollection
       .find({ location: { $regex: regex } })
       .exec();
     console.log("guidIn", guidesInLocation);
@@ -236,6 +278,26 @@ app.post("/api/addGuides", async (req, res) => {
       .json({ error: "An error occurred while adding the package" });
   }
 });
+//----------POST API ADD PACKAGES -----------------
+app.post("/api/addHotel", async (req, res) => {
+  console.log(req.body);
+  const newPackageData = req.body;
+  console.log("POST VAI", newPackageData);
+
+  // Create a new instance of the tourismSpotCollection model with the package data
+  const newPackage = new hotelCollection(newPackageData);
+
+  // Save the new package data to the database
+  try {
+    const savedPackage = await newPackage.save();
+    res.json(savedPackage);
+  } catch (error) {
+    console.error("Error adding a new package:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while adding the package" });
+  }
+});
 
 //----------- POST: /api/register -> Create new user ------------
 app.post("/api/users", async (req, res) => {
@@ -290,7 +352,7 @@ app.post("/submitReview", async (req, res) => {
   try {
     const { displayName, locationID, photoURL, rating, comment } = req.body;
 
-    console.log(displayName, locationID, photoURL, rating);
+    // console.log(displayName, locationID, photoURL, rating);
 
     // Find the tourism spot by its ID
     const tourismSpot = await tourismSpotCollection.findById(locationID);
@@ -334,7 +396,7 @@ app.post("/guide/submitReview", async (req, res) => {
   try {
     const { displayName, guideID, photoURL, rating, comment } = req.body;
 
-    console.log(displayName, guideID, photoURL, rating);
+    // console.log(displayName, guideID, photoURL, rating);
 
     // Find the tourism spot by its ID
     const tourismSpot = await guideCollection.findById(guideID);
@@ -428,7 +490,7 @@ app.put("/api/users/admin/:email", async (req, res) => {
 });
 // ================PUT API for updating a package============
 app.put("/explore/:id", async (req, res) => {
-  console.log(req.params, req.body);
+  // console.log(req.params, req.body);
   const id = req.params.id;
   const updatedPackageData = req.body;
   try {
@@ -461,6 +523,32 @@ app.put("/guide/:id", async (req, res) => {
     const query = { _id: new ObjectId(id) };
     // console.log(query);
     const updatedPackage = await guideCollection.findOneAndUpdate(
+      query,
+      updatedPackageData,
+      { new: true }
+    );
+    // console.log(updatedPackage)
+    if (updatedPackage) {
+      res.json(updatedPackage);
+    } else {
+      res.status(404).json({ error: "Package not found" });
+    }
+  } catch (error) {
+    console.error("Error updating package", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while updating the package" });
+  }
+});
+// ================PUT API for updating a hotel============
+app.put("/hotel/:id", async (req, res) => {
+  // console.log(req.params,req.body);
+  const id = req.params.id;
+  const updatedPackageData = req.body;
+  try {
+    const query = { _id: new ObjectId(id) };
+    // console.log(query);
+    const updatedPackage = await hotelCollection.findOneAndUpdate(
       query,
       updatedPackageData,
       { new: true }
@@ -550,6 +638,27 @@ app.delete("/guide/:id", async (req, res) => {
       .json({ error: "An error occurred while deleting the package" });
   }
 });
+// --------------------DELETE API for deleting a hotel-----------
+app.delete("/hotel/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const query = { _id: new ObjectId(id) };
+    const result = await hotelCollection.deleteOne(query);
+    if (result.deletedCount === 1) {
+      res.json({
+        message: "Package deleted successfully",
+        deletedPackageId: id,
+      });
+    } else {
+      res.status(404).json({ error: "Package not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting package", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while deleting the package" });
+  }
+});
 
 //----------DELETE API FOR CANCEL ORDER -----------------
 app.delete("/userOrders/:_id", async (req, res) => {
@@ -571,7 +680,7 @@ app.delete("/userOrders/:_id", async (req, res) => {
 });
 //----------DELETE API FOR USER-----------------
 app.delete("/api/users/:id", async (req, res) => {
-  console.log(req.params);
+  // console.log(req.params);
   const id = req.params.id; // Use id as the parameter
   try {
     const user = await userCollection.findOne({ _id: id }); // Use _id to find the user

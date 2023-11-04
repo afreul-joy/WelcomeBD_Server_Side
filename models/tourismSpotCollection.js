@@ -11,6 +11,7 @@ const tourismSpotSchema = new mongoose.Schema({
   name: String,
   location: String,
   img: [String],
+  map:String,
   tour_duration: String,
   originalPrice: Number,
   discountedPrice: Number,
@@ -21,6 +22,30 @@ const tourismSpotSchema = new mongoose.Schema({
   categories: [String],
   rating: Number,
   user_reviews: [reviewSchema], // Nested reviews
+  tour_description: String,
+  locations_covered: [String],
+  menu_items: {
+    Day_1: {
+      Breakfast: String,
+      Lunch: String,
+      Dinner: String,
+    },
+    Day_2: {
+      Breakfast: String,
+      Lunch: String,
+      Dinner: String,
+    },
+  },
+  bookTour: String,
+  pickUp: String,
+  inclusion_exclusion: {
+    inclusion: [String],
+    exclusion: [String],
+  },
+  travelTips: [String],
+  policy: {
+    cancellation: String,
+  },
 });
 
 const tourismSpotCollection = mongoose.model(
