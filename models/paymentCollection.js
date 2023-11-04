@@ -11,7 +11,10 @@ const paymentSchema = new mongoose.Schema({
   paymentStatus: String,
   status: String,
   locationID: String,
-  guideID: String
+  guideID: String,
+  hotelID: String,
+  hotel: String,
+  name:String
 });
 
 const paymentCollection = mongoose.model("payment_collections", paymentSchema);

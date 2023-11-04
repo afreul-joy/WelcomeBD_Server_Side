@@ -109,7 +109,7 @@ app.get("/hotel-in-location/:location", async (req, res) => {
     const guidesInLocation = await hotelCollection
       .find({ location: { $regex: regex } })
       .exec();
-    console.log("guidIn", guidesInLocation);
+    // console.log("guidIn", guidesInLocation);
     res.json(guidesInLocation);
   } catch (error) {
     res.status(500).json({ error: "Unable to fetch guides in this location" });
@@ -170,14 +170,17 @@ const stripe = require("stripe")(
 );
 
 app.post("/payment", cors(), async (req, res) => {
+  console.log("Payment", req.body)
   try {
     const {
       name,
+      hotel,
       amount,
       id,
       guide,
       email,
       guideID,
+      hotelID,
       journeyDate,
       location,
       img,
@@ -192,6 +195,8 @@ app.post("/payment", cors(), async (req, res) => {
       name,
       amount,
       id,
+      hotel,
+      hotelID,
       guide,
       locationID,
       email,
@@ -204,7 +209,7 @@ app.post("/payment", cors(), async (req, res) => {
 
     // Save payment data to the database
     await payment.save();
-
+    console.log("Payment save is", payment)
     // Perform the Stripe payment processing
     const stripePayment = await stripe.paymentIntents.create({
       amount,
@@ -400,6 +405,51 @@ app.post("/guide/submitReview", async (req, res) => {
 
     // Find the tourism spot by its ID
     const tourismSpot = await guideCollection.findById(guideID);
+
+    if (!tourismSpot) {
+      res.status(404).json({ error: "Tourism spot not found" });
+      return;
+    }
+
+    // Create a new review object
+    const newReview = {
+      displayName: displayName,
+      photoURL: photoURL,
+      rating: rating,
+      comment: comment,
+    };
+
+    // Add the new review to the tourism spot's user_reviews array
+    tourismSpot.user_reviews.push(newReview);
+
+    // Update the tourism spot's rating (calculate the average rating)
+    const totalRatings = tourismSpot.user_reviews.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+    tourismSpot.rating = totalRatings / tourismSpot.user_reviews.length;
+
+    // Save the updated tourism spot document
+    await tourismSpot.save();
+
+    res.json({ message: "Review submitted successfully" });
+  } catch (error) {
+    console.error("Error submitting review", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while submitting the review" });
+  }
+});
+// -------------------------- SUBMIT REVIEW  FOR Hotel --------------------------
+app.post("/hotel/submitReview", async (req, res) => {
+  console.log("Submit review", req.body)
+  try {
+    const { displayName, hotelID, photoURL, rating, comment } = req.body;
+
+    // console.log(displayName, guideID, photoURL, rating);
+
+    // Find the tourism spot by its ID
+    const tourismSpot = await hotelCollection.findById(hotelID);
 
     if (!tourismSpot) {
       res.status(404).json({ error: "Tourism spot not found" });
