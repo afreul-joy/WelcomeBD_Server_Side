@@ -3,7 +3,7 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 
 const url = process.env.MONGO_URL;
-console.log(url);
+console.log(`url is ${url}`);
 mongoose.connect(url)
 .then(()=>{
   console.log("Connected to the MongoDB Atlas!");
